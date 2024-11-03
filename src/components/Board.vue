@@ -13,7 +13,7 @@
         <Square 
           v-for="(col, colIndex) in 3" 
           :key="colIndex"
-          :value="squares[rowIndex * 3 + colIndex]" 
+          :value="localSquares[rowIndex * 3 + colIndex]" 
           @click="handleClick(rowIndex * 3 + colIndex)" 
         />
       </div>
@@ -28,24 +28,34 @@ export default {
   name: "TicTacToeBoard",
   components: { Square },
   props: {
-    squares: Array,
+    squares: Array,    // 外部から受け取る初期状態
     disabled: Boolean  // 他のプレイヤーが入力中の時は操作を無効化する
   },
   data() {
     return {
-      squares: Array(9).fill(null),
+      localSquares: Array(9).fill(null),
       xIsNext: true,
       winner: null,
       isDraw: false,
     };
   },
+  watch: {
+    squares: {
+      immediate: true,
+      handler(newVal) {
+        if (Array.isArray(newVal)) {
+          this.localSquares = [...newVal];  // squaresの変更をlocalSquaresに反映
+        }
+      }
+    }
+  },
   methods: {
     handleClick(index) {
-      if (this.squares[index] || this.winner || this.isDraw || this.disabled) return;
+      if (this.localSquares[index] || this.winner || this.isDraw || this.disabled) return;
 
-      const newSquares = [...this.squares];
+      const newSquares = [...this.localSquares];
       newSquares[index] = this.xIsNext ? '○' : '×';
-      this.squares = newSquares;
+      this.localSquares = newSquares;
 
       this.winner = this.calculateWinner(newSquares);
 
@@ -55,7 +65,7 @@ export default {
 
       if (!this.winner && !this.isDraw) {
         this.xIsNext = !this.xIsNext;
-        this.$emit('make-move', { index, symbol: this.xIsNext ? '○' : '×' });
+        this.$emit('make-move', { index, symbol: newSquares[index] });  // 親コンポーネントに変更を通知
       }
     },
     calculateWinner(squares) {
@@ -82,19 +92,11 @@ export default {
       this.$emit('game-over');
     },
     resetGame() {
-      this.squares = Array(9).fill(null);
+      this.localSquares = Array(9).fill(null);
       this.xIsNext = true;
       this.winner = null;
       this.isDraw = false;
     },
-  },
-  watch: {
-    squares: {
-      immediate: true,
-      handler(newVal) {
-        this.squares = newVal;
-      }
-    }
   }
 };
 </script>
